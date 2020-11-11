@@ -1,0 +1,283 @@
+---
+title: "Exploring Data from the Lahman Package"
+author: "Jim Albert albert@bgsu.edu"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+#### R Markdown
+
+In RStudio, a R Markdown file is a convenient way to combine text and R work.
+
+#### Where is the R Code?
+
+All of the R code for this workshop (as R Markdown files) will be available at
+
+bit.ly/Rbaseball
+
+#### Questions?
+
+You are welcome to ask question in the Chat window. I'll answer some of these at the end of this 50-minute presentation.
+
+#### The Data?
+
+All of the data is contained as data frames within the Lahman package.
+
+#### Packages
+
+For this activity, I'll load three packages. (I am assuming that you already have them installed in R.)
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(Lahman)
+```
+
+#### Introduction to data wrangling
+
+-   Start with a data frame - a rectangular array of data where rows correspond to observations and columns correspond to variables.
+
+-   These dplyr verbs operate on a data frame. Use the piping operation ( %\>% ) to pass along the data frame between operations.
+
+#### Common dplyr verbs:
+
+-   filter() - choose rows
+-   select() - choose columns
+-   mutate() - create new variables
+-   arrange() - sort by one or more variables
+-   group_by() - divide data frame into groups
+-   summarize() - compute a particular summary
+
+#### Home Run Rate
+
+Let's focus on home run rates, specifically the rate of home runs (HR) on balls in play (BIP): $$
+Rate = \frac{HR}{BIP} = \frac{HR}{AB - SO}
+$$
+
+#### Best Single Season HR Rates?
+
+In the last 60 seasons (1960 - 2019), let's find the top ten hitters with respect to single season home run rate. (At least 400 AB.)
+
+#### Plan
+
+-   Start with Batting data frame.
+-   Use filter() function to only consider seasons 1960 or later.
+-   For each player for each season, want to find the sum of AB, SO, HR.
+-   Use mutate() function to compute the home run rate.
+-   Store results in data frame S.
+
+```{r}
+Batting %>% 
+  filter(yearID >= 1960) %>% 
+  group_by(playerID, yearID) %>% 
+  summarize(AB = sum(AB),
+            SO = sum(SO),
+            HR = sum(HR),
+            .groups = "drop") -> S
+```
+
+Look at a few rows of S.
+
+```{r}
+head(S)
+```
+
+-   I'll limit my search to at least 400 AB.
+-   Compute HR rates for all players.
+
+```{r}
+S %>% 
+  filter(AB >= 400) %>% 
+  mutate(Rate = HR / (AB - SO)) -> S400
+```
+
+-   Arrange by HR rate.
+-   Display the top 10 HR rates.
+
+```{r}
+S400 %>% 
+  arrange(desc(Rate)) %>% 
+  head(10) -> topten
+topten
+```
+
+Let's improve this display:
+
+-   Add player names.
+-   Only show name, yearID, HR, and Rate
+-   round Rate to three decimal points.
+
+```{r}
+inner_join(select(Master, playerID, nameFirst,
+                  nameLast), topten,
+           by = "playerID") %>% 
+          arrange(desc(Rate)) -> topten
+topten
+```
+
+```{r}
+topten %>% 
+  mutate(Rate = round(Rate, 3)) %>% 
+  select(nameFirst, nameLast, yearID, Rate) ->
+  topten
+topten
+```
+
+#### Graph Results
+
+```{r}
+ggplot(topten, aes(yearID, Rate)) +
+  geom_point()
+```
+
+```{r}
+ggplot(topten, aes(yearID, Rate, label = nameLast)) +
+  geom_label()
+```
+
+#### Season Home Run Rates
+
+Let's explore the pattern of overall home run rates over the past 50 seasons.
+
+```{r}
+Teams %>% 
+  filter(yearID >= 1960) %>% 
+  group_by(yearID) %>% 
+  summarize(HR = sum(HR),
+            AB = sum(AB),
+            SO = sum(SO),
+            Rate = HR / (AB - SO),
+            .groups = "drop") -> S3
+head(S3)
+```
+
+```{r}
+ggplot(S3, aes(yearID, Rate)) +
+  geom_point() +
+  geom_smooth(span = 0.2)
+```
+
+#### Ohio Colleges
+
+What Ohio colleges are represented in the Lahman database?
+
+```{r}
+Schools %>% 
+  filter(state == "OH") %>% 
+  pull(schoolID) -> ohio_schools
+```
+
+Which colleges had the most seasons containing future MLB players?
+
+```{r}
+CollegePlaying %>% 
+  filter(schoolID %in% ohio_schools) %>% 
+  group_by(schoolID) %>% 
+  summarize(N = n(), .groups = "drop") %>% 
+  arrange(desc(N)) %>% 
+  head()
+```
+
+Among all Ohio players, who had the most career hits in the MLB?
+
+Collect ids of all Ohio players.
+
+```{r}
+CollegePlaying %>% 
+  filter(schoolID %in% ohio_schools) %>% 
+  pull(playerID) %>% unique() -> ohio_players
+```
+
+Collect the number of MLB career hits for all Ohio players. Sort from highest to lowest.
+
+```{r}
+Batting %>% 
+  filter(playerID %in% ohio_players) %>% 
+  group_by(playerID) %>% 
+  summarize(H = sum(H), .groups = "drop") %>% 
+  arrange(desc(H)) %>% head(5) -> top_hits
+```
+
+Add first and last names to the list.
+
+```{r}
+inner_join(select(Master, playerID, nameFirst,
+                  nameLast), top_hits,
+           by = "playerID") %>% 
+          arrange(desc(H)) 
+```
+
+Ohio player with the most MLB pitcher wins?
+
+```{r}
+Pitching %>% 
+  filter(playerID %in% ohio_players) %>% 
+  group_by(playerID) %>% 
+  summarize(W = sum(W), .groups = "drop") %>% 
+  arrange(desc(W)) %>% head(5) -> top_wins
+```
+
+Add first and last names.
+
+```{r}
+inner_join(select(Master, playerID, nameFirst,
+                  nameLast), top_wins,
+           by = "playerID") %>% 
+          arrange(desc(W)) 
+```
+
+What Ohio schools did these pitchers attend?
+
+```{r}
+CollegePlaying %>% 
+  filter(playerID %in% top_wins$playerID) %>% 
+  group_by(playerID) %>% 
+  summarize(College = first(schoolID),
+            .groups = "drop")
+```
+
+#### World Series
+
+What teams have won the most World Series?
+
+```{r}
+SeriesPost %>% 
+  filter(round == "WS") %>% 
+  group_by(teamIDwinner) %>% 
+  summarize(N = n()) %>% 
+  arrange(desc(N)) %>% 
+  head()
+```
+
+What seasons did the Yankees win the WS?
+
+```{r}
+SeriesPost %>% 
+  filter(round == "WS", 
+         teamIDwinner == "NYA") %>% 
+  pull(yearID)
+```
+
+#### Some Questions to Explore
+
+1.  Suppose you define the walk rate to be $$
+    BB Rate = \frac{BB}{AB + BB}
+    $$
+
+In the last 60 seasons (1960-2019), find the ten players that had the highest walk rates (assuming AB + BB >= 400).
+
+2.  When did these top walk rate players play? (Do you see any pattern?)
+
+3.  The demise of triples. It seems that triples are really rare in current MLB. Define the in-play triple rate to be 
+
+$$
+    Rate = \frac{Triples}{AB - SO}
+$$ 
+Find the triple rate for all seasons from 1960 through 2019. Construct a graph plotting the triple rate against season and add a smoothing curve. Do you see a pattern?
+
+4.  Both triples and stolen bases are considered speed plays. Construct a scatterplot of the triple rate against the number of stolen bases for all seasons since 1960. Do you see a relationship?

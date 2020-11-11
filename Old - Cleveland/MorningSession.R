@@ -7,7 +7,8 @@ library(ggplot2)
 
 #Select------------------------------------------------------------------------------
 
-bdat <- Batting %>% select(playerID,yearID,teamID,HR)
+bdat <- Batting %>% 
+  select(playerID,yearID,teamID,HR)
 
 #Filter------------------------------------------------------------------------------
 

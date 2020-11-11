@@ -13,7 +13,6 @@ source("http://www-math.bgsu.edu/~albert/ACTION/zone.R")
 ## reads in all home run data from the 2017 season
 hr <- read_csv("http://bit.ly/homerun2017")
 
-
 ## explore Mike Trout's first home run that season
 hr %>% filter(player_name == "Mike Trout") %>% 
   arrange(game_date) %>% 

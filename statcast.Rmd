@@ -1,0 +1,280 @@
+---
+title: "Exploring Statcast Data for Four Pitchers"
+author: "Jim Albert albert@bgsu.edu"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+#### Introduction
+
+- Illustrate the Statcast database which gives much information about every pitch thrown in a MLB game
+
+- I have created a subset of the 2020 Statcast data, focusing on four starting pitchers
+
+- Focus on variables that describe the pitch type, speed, break, location, and outcome (swing and miss) for each pitch
+
+#### R Code?
+
+- All of the R code for this workshop (as R Markdown files) will be available at
+
+bit.ly/Rbaseball
+
+#### Questions?
+
+You are welcome to ask question in the Chat window.  I'll answer some of these at the end of this 50-minute presentation.
+
+#### Read in four packages
+
+```{r}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(janitor)
+```
+
+#### Source in a file to add a zone to a graph
+
+```{r}
+source("http://bit.ly/add_zone")
+```
+
+#### Data
+
+I have collected Statcast data for all pitches for four pitchers for the 2020 season.
+
+```{r}
+d <- read_csv("http://bit.ly/4pitchers")
+```
+
+By the way, I added three new variables to the dataset:
+
+- Pitcher - last name of the pitcher
+- Swing - did the batter swing?  1 (yes), 0 (no)
+- Miss - did the batter miss?  1 (yes), 0 (no)
+
+#### Who Are the Pitchers?
+
+What pitchers did I include?
+
+```{r}
+d %>% 
+  tabyl(Pitcher)
+```
+
+#### Types of pitches
+
+A nice reference:  Terry McDermott _Off Speed:  Baseball, Pitching \& and the Art of Deception_
+
+
+- (FF) Four-Seam Fastball: A straight fastball, almost always the fastest ball any pitcher can throw. Speeds range from low 80's to 100 mph.
+
+- (FT) Two-Seam Fastball:  Fastball gripped with the seams rather than across them.  Sinks and often moves left to right from a right-handed pitcher.
+
+- (CB and KC) Curveball:  Most basic breaking pitch.  Pitcher imparts spin to the ball, causing it to break both horizontally right-to-left and down (for a right-handed pitcher).
+
+- (SL) Slider:  Faster breaking ball than curveball.  Breaks more horizontally and less vertically then a normal curveball.  
+
+- (FC) Cut Fastball:  Cutter lies halfway along the continuum between a slider and a fastball.  Relatively little break, but does this late.
+
+- (CH) Changup:  Thrown like a fastball but leaves the hand as much as 10 mph slower.  Often imparts a slight right-to-left break from a right-handed pitcher.
+
+- (SI) Sinker:  Similar to a two-seam fastball.
+
+- (FS) Splitter:  Similar to a sinker but with a much sharper downward break.  Slower than a fastball.
+
+#### What pitches did our pitchers throw?
+
+```{r}
+d %>% 
+  tabyl(pitch_name)
+```
+
+Breakdown pitch types by pitcher:
+
+```{r}
+d %>% 
+  tabyl(pitch_name, Pitcher)
+```
+
+#### Four-Seam Fastball Speeds
+
+```{r}
+ggplot(filter(d, pitch_type == "FF"),
+       aes(release_speed)) +
+  geom_histogram(color = "white",
+                 fill = "blue")
+```
+
+How do these fastball speeds vary by pitcher?
+
+```{r}
+ggplot(filter(d, pitch_type == "FF"),
+       aes(release_speed)) +
+  geom_histogram(color = "white",
+                 fill = "blue") +
+  facet_wrap(~ Pitcher, ncol = 1)
+```
+
+Average four-seam fastball speed of each pitcher?
+
+```{r}
+d %>% 
+  filter(pitch_type == "FF") %>% 
+  group_by(Pitcher) %>% 
+  summarize(Count = n(),
+            Mean = mean(release_speed))
+```
+
+#### Movement
+
+Let's focus on Kershaw.  Compare the movement of each type of pitch.
+
+```{r}
+ck <- filter(d, Pitcher == "Kershaw")
+```
+
+```{r}
+ggplot(ck, 
+       aes(pfx_x, pfx_z, 
+           color = pitch_type)) +
+  geom_point()
+```
+
+#### Location of Pitches?
+
+```{r}
+ggplot(ck, 
+       aes(plate_x, plate_z, 
+           color = pitch_type)) +
+  geom_point()
+```
+
+```{r}
+ggplot(ck, 
+       aes(plate_x, plate_z, 
+           color = pitch_type)) +
+  geom_point() +
+  add_zone()
+```
+
+```{r}
+ggplot(ck, 
+       aes(plate_x, plate_z)) +
+  geom_point() +
+  add_zone() +
+  facet_wrap(~ pitch_type, ncol = 2)
+```
+
+#### Swing and Miss
+
+Focus on 
+
+- Kershaw's curve balls
+- Batter swings at pitch (Swing = 1)
+- Record if there is a Miss (Miss = 1) or 
+Contact (Miss = 0)
+
+```{r}
+ggplot(filter(ck, pitch_type == "CU",
+              Swing == 1),
+       aes(plate_x, plate_z, color = Miss)) +
+  geom_point() + add_zone()
+```
+
+What fraction of swings on curveballs were missed?
+
+```{r}
+ck %>% 
+  filter(pitch_type == "CU",
+         Swing == 1) %>% 
+  tabyl(Miss)
+```
+
+How does that compare with other pitchers?
+
+Compare the curveballs of Kershaw and Wheeler.
+
+```{r}
+d %>% 
+  filter(pitch_type == "CU",
+         Swing == 1) %>% 
+  tabyl(Pitcher, Miss) %>% 
+  adorn_percentages("row")
+```
+
+Compare the Knuckle Curves of Bauer and Cole.
+
+```{r}
+d %>% 
+  filter(pitch_type == "KC",
+         Swing == 1) %>% 
+  tabyl(Pitcher, Miss) 
+```
+
+Maybe Cole is better because of its movement?
+
+```{r}
+d %>% 
+  filter(pitch_type == "KC") %>% 
+  ggplot(aes(pfx_x, pfx_z,
+             color = Pitcher)) +
+  geom_point()
+```
+
+
+Maybe Cole is better because of its location?
+
+```{r}
+d %>% 
+  filter(pitch_type == "KC") %>%
+  ggplot(aes(plate_x, plate_z)) +
+  geom_point() + 
+  add_zone() +
+  facet_wrap(~ Pitcher)
+```
+
+Maybe Cole is better since he has a better spin rate?
+
+```{r}
+d %>% 
+  filter(pitch_type == "KC") %>% 
+  ggplot(aes(Pitcher, release_spin_rate)) +
+  geom_jitter() 
+```
+
+Relationship between spin and movement?
+
+Focus on Cole's knuckle curveball.
+
+```{r}
+ggplot(filter(d, pitch_type == "KC",
+              Pitcher == "Cole"),
+  aes(release_spin_rate, pfx_z)) +
+  geom_point() +
+  geom_smooth()
+```
+
+```{r}
+ggplot(filter(d, pitch_type == "KC",
+              Pitcher == "Cole"),
+  aes(release_spin_rate, pfx_x)) +
+  geom_point() +
+  geom_smooth()
+```
+
+
+
+
+
+
+
+
+
+
+
+
