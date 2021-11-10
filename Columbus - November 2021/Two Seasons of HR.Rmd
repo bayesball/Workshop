@@ -1,0 +1,276 @@
+---
+title: "A Home Run Story"
+author: "Jim Albert"
+date: "11/12/21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+#### Plan
+
+The plan is to introduce the use of the `dplyr` and `ggplot2` packages to manipulate and graph data contained in a data frame. This Markdown document contains text and R code which I will run through in this workshop. Given the time limitations, I will likely go fast, but you will have the opportunity to try this code and some new exercises by downloading the Markdown file on your laptop.
+
+#### Github
+
+This R Markdown file can be found in my Github folder:
+
+<https://github.com/bayesball/Workshop/tree/master/Columbus%20-%20November%202021>
+
+#### Getting Started
+
+Read in four packages (part of the tidyverse suite of packages):
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(purrr)
+```
+
+#### Background Story
+
+There has been a recent surge in home run hitting in Major League Baseball.
+
+-   In 2015 (the first season of the Statcast era) there were a total of 4909 home runs hit.
+-   Four seasons later (2019) there were 6776 home runs hit, a 38% increase!
+-   But in 2021 (the first complete season after 2019) we saw only 5944 home runs (a 12% decrease from 2019).
+
+What is going on?
+
+We are going to compare home run production in the 2019 and 2021 seasons. We'll discover two interesting facts:
+
+-   Batters are hitting balls harder in 2021 than in 2019. So one would think that this would lead to more home runs hit in the 2021 season.
+
+-   But the characteristics of the 2019 and 2021 baseballs are not the same. The 2021 balls appear to be deader (they don't carry as much), and we will see that balls hit at specific "hard-hit" launch conditions are less likely to be home runs in 2021 compared to 2019.
+
+#### The Data
+
+Read in some Statcast data from my Github site. This data represents all in-play data for two MLB seasons (2019 and 2021) -- this dataset has 246,858 rows.
+
+```{r}
+sc <- read_csv("https://raw.githubusercontent.com/bayesball/HomeRuns2021/main/two_seasons_HR.csv")
+```
+
+```{r}
+head(sc)
+```
+
+The variables are
+
+-   Season (either 2019 or 2021)
+-   Player (name of the batter)
+-   launch_angle (in degrees)
+-   launch_speed (in mph)
+-   HR (indicator, either 1 or 0)
+
+#### What values of launch variables are associated with home runs?
+
+Here is a scatterplot of (launch angle, launch speed) for all home runs hit in the 2019 season.
+
+```{r}
+ggplot(filter(sc, Season == 2019, HR == 1),
+       aes(launch_angle, launch_speed)) +
+  geom_jitter()
+```
+
+We see that practically all of home runs happen for launch conditions where 15 \< launch angle \< 45 and 90 \< launch speed \< 120.
+
+#### Optimal launch angle?
+
+If one hits a ball around 100 mph, what is the most desirable launch angle for hitting a home run?
+
+1.  We consider balls hit for launch speeds between 95 and 105 mph.
+2.  For each launch angle, we compute the count of batted balls and the fraction of HR.
+3.  Which value of launch angle maximizes the chance of a home run?
+
+```{r}
+sc100 <- filter(sc, launch_speed <= 105,
+                launch_speed >= 95) 
+```
+
+```{r}
+sc100 %>% 
+  group_by(launch_angle) %>% 
+  summarize(N = n(),
+            HR_Rate = sum(HR) / N) -> S
+```
+
+Graph the launch angle against the fraction of home runs.
+
+```{r}
+ggplot(filter(S, launch_angle > 0),
+       aes(launch_angle, HR_Rate)) +
+  geom_point()
+```
+
+#### How has the fraction of hard-hit balls changed from 2019 and 2021?
+
+We define a "hard-hit" ball as a batted ball with a launch speed at least 100 mph.
+
+For each season, I compute the percentage of hard-hit balls.
+
+```{r}
+sc %>% 
+  group_by(Season) %>% 
+  summarize(M = 100 * mean(launch_speed >= 100,
+                     na.rm = TRUE))
+```
+
+How does the percentage of hard hit balls between 25 and 35 degrees differ between 2019 and 2021?
+
+```{r}
+sc %>% 
+  group_by(Season) %>% 
+  summarize(M = 100 * mean(launch_speed >= 100 &
+                     launch_angle >= 25 &
+                     launch_angle <= 35,
+                     na.rm = TRUE))
+```
+
+#### Focus on these hard-hit balls (at least 100 mph and launch angle between 20 and 40 degrees) -- compare fraction of home runs for each season?
+
+```{r}
+sc %>% 
+  filter(launch_speed >= 100,
+         launch_angle >= 20,
+         launch_angle <= 40) %>% 
+  group_by(Season) %>% 
+  summarize(N = n(),
+            HR = sum(HR),
+            HR_Rate = 100 * HR / N)
+```
+
+What about balls hit at least 110 mpg and these same launch angles?
+
+```{r}
+sc %>% 
+  filter(launch_speed >= 110,
+         launch_angle >= 20,
+         launch_angle <= 40) %>% 
+  group_by(Season) %>% 
+  summarize(N = n(),
+            HR = sum(HR),
+            HR_Rate = 100 * HR / N)
+```
+
+#### Look at percentage of home runs hit for balls of different average speeds and good launch angles.
+
+Instead of minimum speed, look at launch speeds between the values (speed - delta, speed + delta) where I let delta = 2.
+
+This function `hr_rates()` will create a data frame giving the percentage of home runs hit for that particular launch speed and launch angles in (25, 35) for each season.
+
+```{r}
+hr_rates <- function(avg_speed){
+  delta <- 2
+  sc %>% 
+    filter(launch_speed >= avg_speed - delta,
+           launch_speed <= avg_speed + delta,
+           launch_angle >= 25,
+           launch_angle <= 35) %>% 
+    group_by(Season) %>% 
+    summarize(N = n(),
+              HR = sum(HR),
+              HR_Rate = 100 * HR / N) %>% 
+    mutate(avg_speed)
+}
+```
+
+I will try this function for an average speed of 100 mph.
+
+```{r}
+hr_rates(100)
+```
+
+Run this function for values of average speed between 90 and 115 mph, collecting all of the output in a data frame.
+
+```{r}
+Results <- map_df(90:115, hr_rates)
+```
+
+Graph the results.
+
+```{r}
+ggplot(Results, aes(avg_speed, HR_Rate, 
+               color = as.character(Season))) +
+  geom_line()
+```
+
+#### Individual players
+
+Who has hit the most home runs in the two years 2019, 2021?
+
+```{r}
+sc %>% 
+  group_by(Player) %>% 
+  summarize(HR = sum(HR)) %>% 
+  arrange(desc(HR)) %>% 
+  head(5)
+```
+
+What was the five hardest hit home runs?
+
+```{r}
+sc %>% 
+  filter(HR == 1) %>% 
+  arrange(desc(launch_speed)) %>%
+  select(Player, launch_speed) %>% 
+  head(5)
+```
+
+What was the softest hit home runs?
+
+```{r}
+sc %>% 
+  filter(HR == 1) %>% 
+  arrange(launch_speed) %>%
+  select(Player, launch_speed) %>% 
+  head(5)
+```
+
+Here is a video of the softest hit home run.
+
+<https://www.youtube.com/watch?v=Nzc8rja2TzE>
+
+#### Wrap-Up / Review
+
+This workshop has illustrated many of the verbs used in the `dplyr` package that is one of the key packages of the `tidyverse` suite.
+
+-   `filter` - chooses a subset (rows) of a data frame
+-   `summarize` - summarizes variable from a data frame
+-   `group_by` and `summarize` - groups the data into subgroups and summarizes each subgroup
+-   `mutate` - defines new variables
+-   `arrange` - sorts a data frame by a variable
+-   `select` - chooses columns of a data frame
+
+From the `readr` package, one reads in a dataset of csv format "mydata.csv" and assigns it to a data frame `df` by the command
+
+    df <- read.csv("mydata.csv")
+
+Basic syntax of a graphic using the `ggplot2` package.
+
+    ggplot(data = data.frame,
+           mapping = aes(vars_to_graph)) +
+           geometric_object()
+
+The `map_df()` function from the `purrr` package is useful for applying a function over a list of values and collecting the output into a data frame.
+
+#### Exercises
+
+Here are some additional things to try on your own.
+
+1.  Over this two-year period, what player had the highest average launch speed on home runs? Which player had the highest launch angle on home runs?
+
+2.  For each of the 2019 and 2021 seasons, find the five hitters with the highest average launch speeds on home runs. Do the same players appear on the two lists?
+
+3.  Suppose a hitter hits a ball with a launch speed between 95 and 100 mph and a launch angle between 10 and 20 degrees. What is the chance that this will be a home run?
+
+4.  Among all (launch_speed, launch_angle) pairs, which pair is the most common among all of the home runs hit in the two seasons?
+
+5.  Write a function where the input is a minimum launch speed, say MIN_LS, and the output is a data frame giving the fraction of home runs where the launch speed is at least as larger as MIN_LS.
+
+6.  (Continuation of 5.) Use the map_df() function to apply your function from question 5 for a vector of minimum launch speeds and put the result in a data frame.
