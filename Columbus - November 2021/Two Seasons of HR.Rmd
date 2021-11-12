@@ -11,7 +11,11 @@ knitr::opts_chunk$set(echo = TRUE,
                       warning = FALSE)
 ```
 
-#### Plan
+#### Workshop: Analyzing Baseball with R
+
+Jim Albert, Emeritus Professor, Bowling Green State University  albert@bgsu.edu
+
+#### Introduction
 
 The plan is to introduce the use of the `dplyr` and `ggplot2` packages to manipulate and graph data contained in a data frame. This Markdown document contains text and R code which I will run through in this workshop. Given the time limitations, I will likely go fast, but you will have the opportunity to try this code and some new exercises by downloading the Markdown file on your laptop.
 
