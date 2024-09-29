@@ -1,0 +1,168 @@
+---
+title: "Computing Run Expectancies"
+format: 
+  html:
+    embed-resources: true
+editor: visual
+author:  Jim Albert, https://bayesball.github.io/
+---
+
+## Introduction
+
+This Quarto file explains how to compute expected runs in the remainder of the inning using Retrosheet play-by-play from the 2023 baseball season.
+
+This material is taken from Chapter 5 of the 3rd edition of *Analyzing Baseball Data with R* by Albert, Baumer and Marchi. A description of the run expectancy plot is found at https://baseballwithr.wordpress.com/2020/12/21/summarizing-a-runs-expectancy-matrix/
+
+## Note
+
+The `abdwr3edata` package contains Retrosheet play-by-play data for the 2016 season described in Chapter 5 of ABDWR. Also the `abdwr3edata` package contains the function `retrosheet_add_states()` used here. The `abdwr3edata` package is not used in this exercise.  We use 2023 Retrosheet data read from a Github site and the `retrosheet_add_states()` and `RE_plot()` functions are read from a Github site.
+
+## Reading in packages and functions
+
+Read in three R packages and two functions that are in the same directory as this Quarto source file.
+
+The `dplyr` package is helpful for data wranging.  The `readr` packge is used for reading the data from Github.  The `tidyr` package is used to convert a data frame into a wide format.
+
+```{r}
+#| warning: false
+library(dplyr)
+library(readr)
+library(tidyr)
+source("RE_plot.R")
+source("retrosheet_add_states.R")
+```
+
+## Read in Retrosheet data
+
+Read in Retrosheet data from 2023 season from Github:
+
+```{r}
+retrodata <- read_csv("https://raw.githubusercontent.com/bayesball/HomeRuns2021/refs/heads/main/retro2023.csv",
+               na = character())
+```
+
+## Steps in computing run expectancies
+
+Make sure variable names are lower case:
+
+```{r}
+names(retrodata) <- tolower(names(retrodata))
+```
+
+Record runs before and runs scored for each play.  Also create a half_inning variable that identifies the half inning of a specific game.
+
+```{r}
+retrodata <- retrodata |> 
+    mutate(
+      runs_before = away_score_ct + home_score_ct,
+      half_inning = paste(game_id, inn_ct, bat_home_id),
+      runs_scored = 
+        (bat_dest_id > 3) + (run1_dest_id > 3) + 
+        (run2_dest_id > 3) + (run3_dest_id > 3)
+    )
+```
+
+Collect runs information (the total outs, runs scored, beginning runs, and maximum runs) for each half-inning:
+
+```{r}
+half_innings <- retrodata |>
+    group_by(half_inning) |>
+    summarize(
+      outs_inning = sum(event_outs_ct), 
+      runs_inning = sum(runs_scored),
+      runs_start = first(runs_before),
+      max_runs = runs_inning + runs_start,
+      .groups = "drop"
+  )
+```
+
+Merge summary data with retrosheet data and compute runs in the remainder of the inning:
+
+```{r}
+retrodata <- retrodata |>
+    inner_join(half_innings, by = "half_inning") |>
+    mutate(runs_roi = max_runs - runs_before)
+```
+
+Add beginning and end states for each play using the `retrosheet_add_states()` function.  A state is defined by the runners on base and the number of outs.
+
+```{r}
+retrodata <- retrosheet_add_states(retrodata)
+```
+
+Only consider plays that change states or runs are scored:
+
+```{r}
+changes_retrodata <- retrodata |> 
+    filter(state != new_state | runs_scored > 0)
+```
+
+Only consider complete innings with three outs:
+
+```{r}
+changes_retrodata_complete <- changes_retrodata |>
+    filter(outs_inning == 3)
+```
+
+Compute mean runs in the remainder of inning for all possible states and outs situations:
+
+```{r}
+ExpectedRuns <- changes_retrodata_complete |> 
+    group_by(bases, outs_ct) |>
+    summarize(mean_run_value = mean(runs_roi),
+            .groups = "drop")
+```
+
+`ExpectedRuns` is a data frame.  Reformat the expected runs in the familiar table format.
+
+```{r}
+ExpectedRuns |>
+  pivot_wider(
+    names_from = outs_ct, 
+    values_from = mean_run_value, 
+    names_prefix = "Outs="
+  )
+```
+
+## Graphing runs expectancies
+
+Construct runs expectancy plot where the expected runs is graphed against the Bases Score for each number of outs where the Bases Score is defined as $$
+Bases \, Score = Sum(bases) + I(\# \, of \, runners \, > 1)
+$$
+
+```{r}
+#| warning: false
+(P <- RE_plot(ExpectedRuns))
+```
+
+Here is the data used in the plot:
+
+```{r}
+P$data |> 
+  arrange(outs_ct)
+```
+
+## Interpreting the runs expectancy plot
+
+One can summarize the runs expectancy values by fitting separate lines to the (BasesScore, Runs Expectancy) values for each value of Outs.  One can obtain the coefficients of these lines by fitting an interaction model using the `lm()` function:
+
+```{r}
+lm(mean_run_value ~ outs * Bases_Score, 
+               data = P$data) |> coef() -> Coef
+```
+
+Put regression coefficients of the three fitted lines in table:
+
+```{r}
+(Fitted_Intercepts_Slopes <- data.frame(Outs = 0:2,
+                   Intercept = round(c(Coef[1],
+                         Coef[1] + Coef[2],
+                         Coef[1] + Coef[3]), 2),
+                   Slope = round(c(Coef[4],
+                           Coef[4] + Coef[5],
+                           Coef[4] + Coef[6]), 2)))
+```
+
+-   The **intercepts** give estimates of the Runs when there are no runners on base (Score = 0). With the bases empty, we expect the team will score 0.63, 0.33, and 0.13 runs with 0, 1, and 2 outs, respectively.
+
+-   The **slopes** give the increase in Runs when the Score value increases by one. When there are no outs, each unit increase in Score will increase the expected Runs by 0.23. Similarly, when there is one out, there will be a 0.18 increase in Runs for each unit increase in Score, and when there are two outs, there will be a 0.08 increase in Runs for each unit increase in Score.
