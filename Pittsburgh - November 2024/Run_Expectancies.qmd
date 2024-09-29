@@ -28,8 +28,8 @@ The `dplyr` package is helpful for data wranging.  The `readr` packge is used fo
 library(dplyr)
 library(readr)
 library(tidyr)
-source("RE_plot.R")
-source("retrosheet_add_states.R")
+source("https://raw.githubusercontent.com/bayesball/Workshop/refs/heads/master/Pittsburgh%20-%20November%202024/RE_plot.R")
+source("https://raw.githubusercontent.com/bayesball/Workshop/refs/heads/master/Pittsburgh%20-%20November%202024/retrosheet_add_states.R")
 ```
 
 ## Read in Retrosheet data
@@ -37,7 +37,7 @@ source("retrosheet_add_states.R")
 Read in Retrosheet data from 2023 season from Github:
 
 ```{r}
-retrodata <- read_csv("https://raw.githubusercontent.com/bayesball/HomeRuns2021/refs/heads/main/retro2023.csv",
+retrodata <- read_csv("https://raw.githubusercontent.com/bayesball/Workshop/refs/heads/master/Pittsburgh%20-%20November%202024/retro2023.csv",
                na = character())
 ```
 
