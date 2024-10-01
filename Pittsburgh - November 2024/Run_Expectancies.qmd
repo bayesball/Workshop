@@ -15,13 +15,13 @@ This material is taken from Chapter 5 of the 3rd edition of *Analyzing Baseball 
 
 ## Note
 
-The `abdwr3edata` package contains Retrosheet play-by-play data for the 2016 season described in Chapter 5 of ABDWR. Also the `abdwr3edata` package contains the function `retrosheet_add_states()` used here. The `abdwr3edata` package is not used in this exercise.  We use 2023 Retrosheet data read from a Github site and the `retrosheet_add_states()` and `RE_plot()` functions are read from a Github site.
+The `abdwr3edata` package contains Retrosheet play-by-play data for the 2016 season described in Chapter 5 of ABDWR. Also the `abdwr3edata` package contains the function `retrosheet_add_states()` used here. The `abdwr3edata` package is not used in this exercise. We use 2023 Retrosheet data read from a Github site and the `retrosheet_add_states()` and `RE_plot()` functions are read from a Github site.
 
 ## Reading in packages and functions
 
 Read in three R packages and two functions that are in the same directory as this Quarto source file.
 
-The `dplyr` package is helpful for data wranging.  The `readr` packge is used for reading the data from Github.  The `tidyr` package is used to convert a data frame into a wide format.
+The `dplyr` package is helpful for data wranging. The `readr` packge is used for reading the data from Github. The `tidyr` package is used to convert a data frame into a wide format.
 
 ```{r}
 #| warning: false
@@ -49,7 +49,7 @@ Make sure variable names are lower case:
 names(retrodata) <- tolower(names(retrodata))
 ```
 
-Record runs before and runs scored for each play.  Also create a half_inning variable that identifies the half inning of a specific game.
+Record runs before and runs scored for each play. Also create a half_inning variable that identifies the half inning of a specific game.
 
 ```{r}
 retrodata <- retrodata |> 
@@ -84,7 +84,7 @@ retrodata <- retrodata |>
     mutate(runs_roi = max_runs - runs_before)
 ```
 
-Add beginning and end states for each play using the `retrosheet_add_states()` function.  A state is defined by the runners on base and the number of outs.
+Add beginning and end states for each play using the `retrosheet_add_states()` function. A state is defined by the runners on base and the number of outs.
 
 ```{r}
 retrodata <- retrosheet_add_states(retrodata)
@@ -113,7 +113,7 @@ ExpectedRuns <- changes_retrodata_complete |>
             .groups = "drop")
 ```
 
-`ExpectedRuns` is a data frame.  Reformat the expected runs in the familiar table format.
+`ExpectedRuns` is a data frame. Reformat the expected runs in the familiar table format.
 
 ```{r}
 ExpectedRuns |>
@@ -144,7 +144,7 @@ P$data |>
 
 ## Interpreting the runs expectancy plot
 
-One can summarize the runs expectancy values by fitting separate lines to the (BasesScore, Runs Expectancy) values for each value of Outs.  One can obtain the coefficients of these lines by fitting an interaction model using the `lm()` function:
+One can summarize the runs expectancy values by fitting separate lines to the (BasesScore, Runs Expectancy) values for each value of Outs. One can obtain the coefficients of these lines by fitting an interaction model using the `lm()` function:
 
 ```{r}
 lm(mean_run_value ~ outs * Bases_Score, 
@@ -166,3 +166,29 @@ Put regression coefficients of the three fitted lines in table:
 -   The **intercepts** give estimates of the Runs when there are no runners on base (Score = 0). With the bases empty, we expect the team will score 0.63, 0.33, and 0.13 runs with 0, 1, and 2 outs, respectively.
 
 -   The **slopes** give the increase in Runs when the Score value increases by one. When there are no outs, each unit increase in Score will increase the expected Runs by 0.23. Similarly, when there is one out, there will be a 0.18 increase in Runs for each unit increase in Score, and when there are two outs, there will be a 0.08 increase in Runs for each unit increase in Score.
+
+## Add run values to retrosheet dataset
+
+We add run values to all plays in the Retrosheet dataset.  The run value of a movement from a beginning state to an ending state is given by
+$$
+RUN \, VALUE = RUNS_{New \, State} - RUNS_{Old \, State} +
+RUNS_{Scored \, on \, Play}
+$$
+
+The run values are contained in the new variable `run_value` in the Retrosheet dataset.
+
+```{r}
+retrodata <- retrodata |>
+  left_join(ExpectedRuns, join_by("bases", "outs_ct")) |>
+  rename(rv_start = mean_run_value) |>
+  left_join(
+    ExpectedRuns, 
+    join_by(new_bases == bases, new_outs == outs_ct)
+  ) |>
+  rename(rv_end = mean_run_value) |>
+  replace_na(list(rv_end = 0)) |>
+  mutate(run_value = rv_end - rv_start + runs_scored)
+```
+
+
+
