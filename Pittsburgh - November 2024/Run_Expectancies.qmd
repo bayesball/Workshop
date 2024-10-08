@@ -10,7 +10,7 @@ date:  November 1, 2024
 
 ## Introduction
 
-A fundamental notion in sabermetrics is the **Runs Expectancy Matrix**. One defines a state of an half-inning as the runners on base and the number of outs. (Since each base can be occupied by a runner or not and there are three possible counts of outs, there are 24 possible states.). For each possible state, the Runs Expectancy Matrix gives the expected number of runs scored in the remainder of the inning. 
+A fundamental notion in sabermetrics is the **Runs Expectancy Matrix**. One defines a state of an half-inning as the runners on base and the number of outs. (Since each base can be occupied by a runner or not and there are three possible counts of outs, there are 24 possible states.). For each possible state, the Runs Expectancy Matrix gives the expected number of runs scored in the remainder of the inning.
 
 ```{r}
 #| fig-cap: "Runs expectancy matrix from FanGraphs."
@@ -19,11 +19,11 @@ A fundamental notion in sabermetrics is the **Runs Expectancy Matrix**. One defi
 knitr::include_graphics(here::here("re_matrix.png"))
 ```
 
-This Quarto file explains how to compute expected runs in the remainder of the inning using Retrosheet play-by-play from the 2023 baseball season.  All of the files for this exercise can be found at <https://bit.ly/3Ng2Yyn>
+This Quarto file explains how to compute expected runs in the remainder of the inning using Retrosheet play-by-play from the 2023 baseball season. All of the files for this exercise can be found at <https://bit.ly/3Ng2Yyn>
 
 This material is taken from Chapter 5 of the 3rd edition of *Analyzing Baseball Data with R* by Albert, Baumer and Marchi. The chapter is online at <https://beanumber.github.io/abdwr3e/05-runsexpectancy.html> . A description of the run expectancy plot is found at <https://baseballwithr.wordpress.com/2020/12/21/summarizing-a-runs-expectancy-matrix/>
 
-## Note:   The `abdwr3edata` package
+## Note: The `abdwr3edata` package
 
 The `abdwr3edata` package contains Retrosheet play-by-play data for the 2016 season described in Chapter 5 of ABDWR. Also the `abdwr3edata` package contains the function `retrosheet_add_states()` used here. The `abdwr3edata` package is not used in this exercise. We use 2023 Retrosheet data read from a Github site and the `retrosheet_add_states()` and `RE_plot()` functions are read from a Github site.
 
@@ -31,13 +31,14 @@ The `abdwr3edata` package contains Retrosheet play-by-play data for the 2016 sea
 
 Read in three R packages and two functions `retrosheet_add_states()` and `RE_plot()` that are in the same directory as this Quarto source file.
 
-The `dplyr` package is helpful for data wrangling. The `readr` packge is used for reading the data from Github. The `tidyr` package is used to convert a data frame into a wide format.
+The `dplyr` package is helpful for data wrangling. The `readr` packge is used for reading the data from Github. The `tidyr` package is used to convert a data frame into a wide format and the `ggplot2` graphics package is used to construct a plot.
 
 ```{r}
 #| warning: false
 library(dplyr)
 library(readr)
 library(tidyr)
+library(ggplot2)
 source("https://raw.githubusercontent.com/bayesball/Workshop/refs/heads/master/Pittsburgh%20-%20November%202024/RE_plot.R")
 source("https://raw.githubusercontent.com/bayesball/Workshop/refs/heads/master/Pittsburgh%20-%20November%202024/retrosheet_add_states.R")
 ```
@@ -225,10 +226,8 @@ inner_join(select(People, retroID, nameFirst, nameLast),
 
 ## Some additional explorations with runs values
 
-1.  In Chapter 5, we explore the runs values of different types of hits.  Explore the variability of the runs values of a double (`event_code = 21` in the Retrosheet data frame).  What are the beginning and end states for the most valuable double? Beginning and end states for the least valuable double?  Find the hitter in the 2023 season who had the highest average run value on doubles.
+1.  In Chapter 5, we explore the runs values of different types of hits. Explore the variability of the runs values of a double (`event_code = 21` in the Retrosheet data frame). What are the beginning and end states for the most valuable double? Beginning and end states for the least valuable double? Find the hitter in the 2023 season who had the highest average run value on doubles.
 
-2.  Find the top 10 2023 hitters with at least 300 plate appearances who were most successful (in terms of average runs value) when there were runners in scoring position.  Find the top hitters who were least successful when there were runners in scoring position.
+2.  Find the top 10 2023 hitters with at least 300 plate appearances who were most successful (in terms of average runs value) when there were runners in scoring position. Find the top hitters who were least successful when there were runners in scoring position.
 
-3.  The function `retrosheet_add_counts()` in the `abdwr3edata` package adds additional variables `c01`, `c10`, `c11`, etc. indicating if the plate appearance went through each possible count.  Using these new variables, find the mean runs value of PAs that go through each possible count.  What is the change in mean runs values (from the batter's perspective) of getting an additional strike?
-
-
+3.  The function `retrosheet_add_counts()` in the `abdwr3edata` package adds additional variables `c01`, `c10`, `c11`, etc. indicating if the plate appearance went through each possible count. Using these new variables, find the mean runs value of PAs that go through each possible count. What is the change in mean runs values (from the batter's perspective) of getting an additional strike?
