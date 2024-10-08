@@ -5,11 +5,19 @@ format:
     embed-resources: true
 editor: visual
 author:  Jim Albert, https://bayesball.github.io/
+date:  November 1, 2024
 ---
 
 ## Introduction
 
-A fundamental notion in sabermetrics is the **Runs Expectancy Matrix**. One defines a state of an half-inning as the runners on base and the number of outs. (Since each base can be occupied by a runner or not and there are three possible counts of outs, there are 24 possible states.). For each possible state, the Runs Expectancy Matrix gives the expected number of runs scored in the remainder of the inning.
+A fundamental notion in sabermetrics is the **Runs Expectancy Matrix**. One defines a state of an half-inning as the runners on base and the number of outs. (Since each base can be occupied by a runner or not and there are three possible counts of outs, there are 24 possible states.). For each possible state, the Runs Expectancy Matrix gives the expected number of runs scored in the remainder of the inning. 
+
+```{r}
+#| fig-cap: "Runs expectancy matrix from FanGraphs."
+#| out-width: "100%"
+#| echo: false
+knitr::include_graphics(here::here("re_matrix.png"))
+```
 
 This Quarto file explains how to compute expected runs in the remainder of the inning using Retrosheet play-by-play from the 2023 baseball season.
 
