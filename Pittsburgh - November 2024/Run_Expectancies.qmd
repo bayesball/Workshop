@@ -1,5 +1,5 @@
 ---
-title: "Obtaining the Run Expectancy Matrix"
+title: "Obtaining the Runs Expectancy Matrix"
 format: 
   html:
     embed-resources: true
@@ -19,9 +19,9 @@ A fundamental notion in sabermetrics is the **Runs Expectancy Matrix**. One defi
 knitr::include_graphics(here::here("re_matrix.png"))
 ```
 
-This Quarto file explains how to compute expected runs in the remainder of the inning using Retrosheet play-by-play from the 2023 baseball season.
+This Quarto file explains how to compute expected runs in the remainder of the inning using Retrosheet play-by-play from the 2023 baseball season.  All of the files for this exercise can be found at <https://bit.ly/3Ng2Yyn>
 
-This material is taken from Chapter 5 of the 3rd edition of *Analyzing Baseball Data with R* by Albert, Baumer and Marchi. The chapter is online at https://beanumber.github.io/abdwr3e/05-runsexpectancy.html . A description of the run expectancy plot is found at https://baseballwithr.wordpress.com/2020/12/21/summarizing-a-runs-expectancy-matrix/
+This material is taken from Chapter 5 of the 3rd edition of *Analyzing Baseball Data with R* by Albert, Baumer and Marchi. The chapter is online at <https://beanumber.github.io/abdwr3e/05-runsexpectancy.html> . A description of the run expectancy plot is found at <https://baseballwithr.wordpress.com/2020/12/21/summarizing-a-runs-expectancy-matrix/>
 
 ## Note:   The `abdwr3edata` package
 
