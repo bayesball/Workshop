@@ -43,10 +43,6 @@ source("https://raw.githubusercontent.com/bayesball/Workshop/refs/heads/master/P
 source("https://raw.githubusercontent.com/bayesball/Workshop/refs/heads/master/Pittsburgh%20-%20November%202024/retrosheet_add_states.R")
 ```
 
-```{r}
-source("RE_plot.R")
-```
-
 ## Read in Retrosheet data
 
 Read in Retrosheet data from 2023 season from Github:
