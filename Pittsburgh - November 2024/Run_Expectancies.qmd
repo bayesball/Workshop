@@ -43,6 +43,10 @@ source("https://raw.githubusercontent.com/bayesball/Workshop/refs/heads/master/P
 source("https://raw.githubusercontent.com/bayesball/Workshop/refs/heads/master/Pittsburgh%20-%20November%202024/retrosheet_add_states.R")
 ```
 
+```{r}
+source("RE_plot.R")
+```
+
 ## Read in Retrosheet data
 
 Read in Retrosheet data from 2023 season from Github:
@@ -138,7 +142,7 @@ ExpectedRuns |>
 ## Graphing runs expectancies
 
 To understand the pattern in the runs expectancy matrix, we construct a **runs expectancy plot**. In this plot, the expected runs is graphed against the Bases Score for each number of outs where the Bases Score is defined as $$
-Bases \, Score = Sum(bases) + I(\# \, of \, runners \, > 1)
+Bases \, Score = 1 \, (runner \, on \, 1st) + 2 \, (runner \, on \, 2nd) + 4  \, (runner \, on \, 3rd)
 $$
 
 ```{r}
@@ -174,7 +178,7 @@ Put regression coefficients of the three fitted lines in table:
                            Coef[4] + Coef[6]), 2)))
 ```
 
--   The **intercepts** give estimates of the Runs when there are no runners on base (Score = 0). With the bases empty, we expect the team will score 0.63, 0.33, and 0.13 runs with 0, 1, and 2 outs, respectively.
+-   The **intercepts** give estimates of the Runs when there are no runners on base (Score = 0). With the bases empty, we expect the team will score 0.63, 0.33, and 0.14 runs with 0, 1, and 2 outs, respectively.
 
 -   The **slopes** give the increase in Runs when the Score value increases by one. When there are no outs, each unit increase in Score will increase the expected Runs by 0.23. Similarly, when there is one out, there will be a 0.18 increase in Runs for each unit increase in Score, and when there are two outs, there will be a 0.08 increase in Runs for each unit increase in Score.
 

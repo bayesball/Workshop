@@ -1,10 +1,11 @@
 RE_plot <- function(erm){
   require(ggplot2)
-  erm$bases <- factor(erm$bases,
-                      levels = c("000", "100", "010", "001",
-                                 "110", "101", "011", "111"))
-  erm$Bases_Score <- as.numeric(erm$bases) - 1
-  erm$outs <- as.character(erm$outs_ct)
+  # using Tom Tango's bases score
+  erm |> 
+    mutate(Bases_Score = 1 * (substr(bases, 1, 1) == "1") +
+                   2 * (substr(bases, 2, 2) == "1") +
+                   4 * (substr(bases, 3, 3) == "1"),
+           outs = as.character(outs_ct)) -> erm
   
   ggplot(erm, aes(Bases_Score, mean_run_value,
                   color = outs)) +
